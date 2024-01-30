@@ -34,6 +34,10 @@ class Event
     "#{date_from} #{time_from} - #{time_to} #{title}"
   end
 
+  def open!
+    `open #{url}`
+  end
+
 end
 
 
@@ -78,3 +82,5 @@ end
 
 binding.pry if options[:debug]
 puts output
+
+events&.first&.open! if options[:openfirst]
