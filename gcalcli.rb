@@ -50,6 +50,7 @@ ACTIONS.include?(action) || raise("Action #{action} not found. Available ACTIONS
 command = nil
 base_command = "gcalcli --nocolor"
 
+
 case action
   when "list"
     command = "#{base_command} list"
@@ -66,7 +67,12 @@ case action
     .map do |line|
       Event.new(line)
     end
-    output = (events.map(&:to_s)+["#{events.count} event(s)"]).join("\n")
+    hours = events.map(&:duration).sum / 60.0
+    working_days = hours / 8.0
+    output = (events.map(&:to_s)+[
+      "#{events.count} event(s)",
+      "#{working_days} working day(s), #{hours} hour(s)",
+    ]).join("\n")
 end
 
 
