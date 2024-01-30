@@ -23,9 +23,14 @@ gcalcli.rb list
 ```
 
 ### search 
-search `string` in events 
+search `string` in events from **now** until the  **end of the year**
 ```
 gcalcli.rb search string
+```
+
+search `all` events from **now** until 2024-03-16
+```
+gcalcli.rb search * to=2020-03-16
 ```
 
 search `string` in events from 2024-01-01 to 2024-03-16

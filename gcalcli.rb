@@ -39,7 +39,7 @@ end
 
 ACTIONS = ["list", "search"]
 action = ARGV[0]
-param = ARGV[1]
+param = (ARGV[1] || "").strip.gsub("*", "\"*\"")
 options = (ARGV[2..-1] || []).map do |option|
   option+="=true" if option.split("=").count == 1
   option.split("=").map(&:strip)
@@ -48,18 +48,18 @@ end.to_h.transform_keys(&:to_sym)
 
 ACTIONS.include?(action) || raise("Action #{action} not found. Available ACTIONS: #{ACTIONS.join(", ")}")
 command = nil
-
+base_command = "gcalcli --nocolor"
 
 case action
   when "list"
-    command = "gcalcli list"
+    command = "#{base_command} list"
     output = `#{command}`
   when "search"
     calendar = options[:calendar] || ENV["CALENDAR_DEFAULT"]
     query = param
     from = options[:from] || Time.now.strftime("%Y-%m-%d")
     to = options[:to] || Time.now.strftime("%Y-12-31")
-    command = "gcalcli --nocolor --cal=\"#{calendar}\" search --military --tsv --details={end,length,description,url} #{query} #{from} #{to}"
+    command = "#{base_command} --cal='#{calendar}' search --military --tsv --details={end,length,description,url} #{query} #{from} #{to}"
     events = `#{command}`
     .split("\n")
     .filter{|line| line != ""}
