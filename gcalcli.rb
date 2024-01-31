@@ -6,16 +6,17 @@ require 'pry'
 require 'dotenv/load'
 Dotenv.load
 
+DATE_FORMAT = "%d/%m/%Y"
+TIME_FORMAT = "%H:%M"
+
 class Event
-  DATE_FORMAT = "%d/%m/%Y"
-  TIME_FORMAT = "%H:%M"
   ATTRIBUTES = [:date_start, :time_start, :date_end, :time_end, :url, :description, :title]
   attr_accessor *ATTRIBUTES
-
-  attr_accessor :from, :to
+  attr_accessor :source_string, :from, :to
   
   def initialize(str)
-    ATTRIBUTES .map.with_index do |key, index|
+    @source_string = str
+    ATTRIBUTES.map.with_index do |key, index|
       self.send("#{key}=", str.split("\t")[index])
     end
     @from = DateTime.parse("#{date_start} #{time_start}")
@@ -41,42 +42,83 @@ class Event
 end
 
 
-ACTIONS = ["list", "search"]
+ACTIONS = ["list", "search", "daily-summary"]
 action = ARGV[0]
 param = (ARGV[1] || "").strip.gsub("*", "\"*\"")
 options = (ARGV[2..-1] || []).map do |option|
   option+="=true" if option.split("=").count == 1
   option.split("=").map(&:strip)
 end.to_h.transform_keys(&:to_sym)
-
-
 ACTIONS.include?(action) || raise("Action #{action} not found. Available ACTIONS: #{ACTIONS.join(", ")}")
-command = nil
-base_command = "gcalcli --nocolor"
 
 
+CALENDARS = {
+  "Antonio": "incode - antonio",
+  "Luca": "incode - luca",
+  "Andrea": "Incode – Andrea",
+  "Federica": "incode - federica",
+  "Martina": "incode - martina",
+  "Matteo": "incode - matteo",
+}
+
+
+def execute(command)
+  base_command = "gcalcli --nocolor"
+  command = "#{base_command} #{command}"
+  #puts command ; return "" #debug
+  `#{command}`
+end
+
+
+def search_events(query, **options)
+  calendar = options[:calendar] || ENV["CALENDAR_DEFAULT"]
+  from = options[:from] || DateTime.now
+  to = options[:to] || DateTime.parse(Time.now.strftime("%Y-12-31"))
+  execute("--cal='#{calendar}' search --military --tsv --details={end,length,description,url} #{query} #{from.strftime("%Y-%m-%d")} #{to.strftime("%Y-%m-%d")}")
+  .split("\n")
+  .filter{|line| line != ""}
+  .map do |line|
+    Event.new(line)
+  end
+end
+
+
+output = ""
 case action
   when "list"
-    command = "#{base_command} list"
-    output = `#{command}`
+    output = execute "list"
+  
   when "search"
-    calendar = options[:calendar] || ENV["CALENDAR_DEFAULT"]
-    query = param
-    from = options[:from] || Time.now.strftime("%Y-%m-%d")
-    to = options[:to] || Time.now.strftime("%Y-12-31")
-    command = "#{base_command} --cal='#{calendar}' search --military --tsv --details={end,length,description,url} #{query} #{from} #{to}"
-    events = `#{command}`
-    .split("\n")
-    .filter{|line| line != ""}
-    .map do |line|
-      Event.new(line)
-    end
+    from = options[:from] ? DateTime.parse(options[:from]) : DateTime.now
+    to = options[:from] ? DateTime.parse(options[:from]) : nil
+    events = search_events(query, calendar: options[:calendar], from: from, to: to)
     hours = events.map(&:duration).sum / 60.0
     working_days = hours / 8.0
     output = (events.map(&:to_s)+[
       "#{events.count} event(s)",
       "#{working_days} working day(s), #{hours} hour(s)",
     ]).join("\n")
+
+  when "daily-summary"
+    today = Time.now
+    tomorrow = (DateTime.now + 1)
+    output = ["Daily summary: #{today.strftime(DATE_FORMAT)}\n\n"]
+    CALENDARS.each do |name, calendar|
+      output << "#{name}"+"\n"
+      events = search_events("'*'", calendar: calendar, from: today, to: tomorrow)
+      events.each_with_index do |event, index| 
+        output << "#{event.from.strftime(TIME_FORMAT)}-#{event.to.strftime(TIME_FORMAT)} #{event.title}"
+        # add a line if there is a gap between events #todo
+        #event_next = events[index+1]
+        #event_next_span = event_next ? (event_next.from - event.to) * 60 : 0
+        #output << "event_next_span #{event_next_span}"
+        #output << "###" if event_next_span > 1
+      end
+      available_hours = (8-events.map(&:duration).sum/60.0)
+      output << "available hours: #{'%.2f' % available_hours}h"
+      output << "\n"
+    end
+    output.join("\n")
 end
 
 

@@ -26,6 +26,11 @@ optional, create a symlink in your `/usr/local/bin/` path
 gcalcli.rb list
 ```
 
+### daly summary 
+```
+gcalcli.rb daily-summary
+```
+
 ### search 
 search **default calendar** for `string` in events from **now** until the  **end of the year**
 ```
@@ -34,7 +39,7 @@ gcalcli.rb search string
 
 get **default calendar** `all` events from **now** until 2024-03-16
 ```
-gcalcli.rb search * to=2020-03-16
+gcalcli.rb search '*' to=2020-03-16
 ```
 
 search `personal` calendar for `string` in events from 2024-01-01 to 2024-03-16
