@@ -65,7 +65,7 @@ CALENDARS = {
 def execute(command)
   base_command = "gcalcli --nocolor"
   command = "#{base_command} #{command}"
-  #puts command ; return "" #debug
+  puts command; return "" #debug
   `#{command}`
 end
 
@@ -90,8 +90,8 @@ case action
   
   when "search"
     from = options[:from] ? DateTime.parse(options[:from]) : DateTime.now
-    to = options[:from] ? DateTime.parse(options[:from]) : nil
-    events = search_events(query, calendar: options[:calendar], from: from, to: to)
+    to = options[:to] ? DateTime.parse(options[:to]) : nil
+    events = search_events(param, calendar: options[:calendar], from: from, to: to)
     hours = events.map(&:duration).sum / 60.0
     working_days = hours / 8.0
     output = (events.map(&:to_s)+[
@@ -100,9 +100,9 @@ case action
     ]).join("\n")
 
   when "daily-summary"
-    today = Time.now
-    tomorrow = (DateTime.now + 1)
-    output = ["Daily summary: #{today.strftime(DATE_FORMAT)}\n\n"]
+    today = !param.empty? ? DateTime.parse(param) : DateTime.now
+    tomorrow = (today + 1)
+    output = ["Daily summary #{today.strftime(DATE_FORMAT)}\n\n"]
     CALENDARS.each do |name, calendar|
       output << "#{name}"+"\n"
       events = search_events("'*'", calendar: calendar, from: today, to: tomorrow)
