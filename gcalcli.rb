@@ -65,7 +65,7 @@ CALENDARS = {
 def execute(command)
   base_command = "gcalcli --nocolor"
   command = "#{base_command} #{command}"
-  puts command; return "" #debug
+  #puts command; return "" #debug
   `#{command}`
 end
 
