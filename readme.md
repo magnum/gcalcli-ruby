@@ -1,5 +1,5 @@
 # gcalcli ruby wrapper
-uses `gcalcli` w/ ruby  
+use `gcalcli` w/ ruby  
 
 author: Antonio Molinari  
 https://github.com/magnum   
